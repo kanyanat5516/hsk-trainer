@@ -226,6 +226,8 @@
 .lc{padding:0 12px;height:34px;border-radius:10px;font-size:.9rem}
 .lc.n{min-width:40px;padding:0;text-align:center;background:#f4f6fb;border-color:transparent}
 .lc.n:hover{border-color:var(--blue)}.lc.n.on{background:var(--blue);color:#fff}
+.del{margin-left:auto;border:1px solid var(--line);background:#fff;color:#c0392b;border-radius:8px;padding:2px 8px;cursor:pointer;font-size:.8rem;white-space:nowrap}
+.del.on{background:#c0392b;color:#fff}
 </style>
 </head>
 <body>
@@ -348,13 +350,14 @@
 
   <div id="pHear" class="hide"><section class="card">
   <div class="bar"><div class="stats"><span class="chip">ข้อ <b id="hNo">0</b></span><span class="chip ok">ถูก <b id="hOK">0</b></span><span class="chip no">ผิด <b id="hNG">0</b></span></div>
-  <div class="row"><label class="toggle"><input type="checkbox" id="hShow"> แสดงข้อความ</label><button type="button" class="btn sm" id="hStartBtn">เริ่มเกมใหม่</button></div></div>
+  <div class="row"><select id="hMode"></select><label class="toggle"><input type="checkbox" id="hShow"> แสดงข้อความ</label><button type="button" class="btn sm" id="hStartBtn">เริ่มเกมใหม่</button></div></div>
   <div class="ask"><p class="label" id="hLabel"></p><div class="listen"><button type="button" class="spk big" id="hBig"></button>
-   <div class="row center"><button type="button" class="btn ghost sm" id="hRe">ฟังอีกครั้ง</button><button type="button" class="btn ghost sm" id="hSlow">ฟังช้า</button></div></div>
+   <div class="row center"><button type="button" class="btn ghost sm" id="hRe">ฟังอีกครั้ง</button><button type="button" class="btn ghost sm" id="hSlow">ฟังช้า</button><button type="button" class="btn ghost sm hide" id="hQa">ฟังคำถาม</button></div></div>
    <div class="hide" id="hText"><p class="cloze" id="hCn"></p><p class="pinyin py pyhide" id="hPy"></p></div></div>
+  <p class="label" id="hQs"></p>
   <div class="opts" id="hOpts" style="grid-template-columns:1fr"></div><div class="note" id="hNote"></div>
   <div class="acts"><button type="button" class="btn hide" id="hNext">ข้อถัดไป</button></div>
-  <p class="hint">เปิด/ปิด “แสดงข้อความ” เพื่อฝึกฟังอย่างเดียว แล้วเลือกคำแปลของประโยคที่ได้ยิน</p></section></div>
+  <p class="hint">เลือกโหมดด้านบน · ปิด “แสดงข้อความ” เพื่อฝึกฟังอย่างเดียว</p></section></div>
 
   <!-- เกมพิมพ์ -->
   <div id="pType" class="hide">
@@ -491,6 +494,7 @@
   <textarea id="addTxt" rows="9" placeholder="วางรายการคำศัพท์ที่นี่ เช่น&#10;คำศัพท์บทที่ 11&#10;1. 今天 (jīntiān / จิน เทียน) = วันนี้&#10;2. 月 (yuè) - เดือน&#10;หรือ 你|nǐ|คุณ|you||||Bạn|Ты"></textarea>
   <div class="row" style="margin-top:10px"><span class="pick">เพิ่มเข้า <select id="addTarget"></select></span></div>
   <p class="hint left" id="addInfo"></p>
+  <p class="hint left">ลบคำที่เพิ่มเองได้ที่แท็บ “คำศัพท์” (ปุ่ม ✕ ท้ายแถว) หรือลบทั้งบทที่หัวบท</p>
   <div class="row center"><button type="button" class="btn ghost" id="addCancel">ยกเลิก</button><button type="button" class="btn" id="addOk">เพิ่มคำศัพท์</button></div>
 </div></div>
 <footer>ฝึกวันละนิด จำได้แน่นอน</footer>
@@ -828,6 +832,7 @@ let LANG="th",GENDER="female",RATE="mid",ACT=false;
 addEventListener("pointerdown",()=>ACT=true,{once:true});
 addEventListener("keydown",()=>ACT=true,{once:true});
 const SEL=new Set(LESSONS.map(L=>L.n));
+const PUN=/[，。？！、：；“”‘’（）,.?!:;"'\s…—-]/g, SC={n:-1,nat:[]};
 const lessonName=L=>L.hsk?"HSK "+(L.hsk===7?"7–9":L.hsk):T("บท ","Lesson ","Bài ","Урок ")+L.n;
 const pool=()=>WORDS.filter(w=>SEL.has(w.l));
 const T=(a,b,c,d)=>LANG==="th"?a:LANG==="vi"?(c||b):LANG==="ru"?(d||b):b;
@@ -1010,7 +1015,7 @@ $("showEx").onchange=e=>document.body.classList.toggle("noex",!e.target.checked)
 $("smart").onchange=()=>{qStart();qSetInfo();};
 
 function refreshLang(){
-  applyUI(); Voice.load(); if(typeof hStart==="function") hStart();
+  applyUI(); Voice.load(); if(typeof hStart==="function"){fillHMode();hStart();}
   if($("qFin").classList.contains("hide")) qRender(true); else qFinish();
   if(G.cur) gRender(true);
   zRender(); buildList(); drawChips(); buildStats(); qSetInfo(); applyUI();
@@ -1316,11 +1321,34 @@ $("gBig").onclick=()=>G.cur&&Voice.say(G.cur.cn,$("gBig"),{word:true});
 $("gRe").onclick=()=>G.cur&&Voice.say(G.cur.cn,$("gBig"),{word:true});
 $("gSlow").onclick=()=>G.cur&&Voice.say(G.cur.cn,$("gBig"),{word:true,slow:true});
 
+
+/* ============ คลังประโยค (ประโยคตัวอย่าง + สร้างจากคำศัพท์ทุกคำ) ============ */
+function segCn(cn,d){const t=cn.replace(PUN,""),out=[];let i=0;
+  while(i<t.length){let m=1;for(let k=Math.min(6,t.length-i);k>=2;k--){if(d.has(t.substr(i,k))){m=k;break;}}
+    const x=t.substr(i,m);out.push([x,d.get(x)||""]);i+=m;} return out;}
+function natural(){
+  if(SC.n!==WORDS.length){SC.n=WORDS.length;const d=new Map(),seen=new Set(),out=[];
+    WORDS.forEach(w=>{if(!d.has(w.cn))d.set(w.cn,w.py);});
+    SENT.forEach(x=>{if(!seen.has(x.cn)){seen.add(x.cn);out.push(x);}});
+    WORDS.forEach(w=>{if(!w.ex)return;const k=w.ex.cn.replace(PUN,"");if(seen.has(k))return;
+      const tok=segCn(w.ex.cn,d);if(tok.length<3||tok.length>10)return;seen.add(k);
+      out.push({l:w.l,tok,cn:tok.map(t=>t[0]).join(""),py:w.ex.py,th:w.ex.th,en:w.ex.en||"",spk:w.ex.cn});});
+    out.forEach((x,i)=>x.sid=i+1);SC.nat=out;}
+  return SC.nat;
+}
+const tm=w=>[w.th||w.en,w.en||w.th];
+const TPL=[
+ w=>({tok:[["我们","wǒmen"],["今天","jīntiān"],["学习","xuéxí"],[w.cn,w.py],["这个","zhège"],["词","cí"]],th:"วันนี้เราเรียนคำว่า "+w.cn+" ("+tm(w)[0]+")",en:"Today we study the word "+w.cn+" ("+tm(w)[1]+")"}),
+ w=>({tok:[["老师","lǎoshī"],["说","shuō"],[w.cn,w.py],["这个","zhège"],["词","cí"],["很","hěn"],["重要","zhòngyào"]],th:"ครูบอกว่าคำว่า "+w.cn+" ("+tm(w)[0]+") สำคัญมาก",en:"The teacher says the word "+w.cn+" ("+tm(w)[1]+") is very important"}),
+ w=>({tok:[["请","qǐng"],["你","nǐ"],["读","dú"],["一下","yíxià"],[w.cn,w.py]],th:"กรุณาอ่านคำว่า "+w.cn+" ("+tm(w)[0]+") หน่อย",en:"Please read "+w.cn+" ("+tm(w)[1]+")"})
+];
+function tplFor(ws){const out=[];ws.forEach(w=>{if(w.cn.length>6)return;TPL.forEach(f=>{const o=f(w);o.l=w.l;o.cn=o.tok.map(t=>t[0]).join("");o.py=o.tok.map(t=>t[1]).join(" ");out.push(o);});});return out;}
 /* ============ 4) เกมเรียงประโยค ============ */
 const Z={list:[],i:0,ok:0,picked:[],done:false};
 function zStart(){
-  const l=SENT.filter(s=>SEL.has(s.l));
-  Z.list=sh(l.length?l:SENT); Z.i=0; Z.ok=0; zRender();
+  const nn=sh(natural().filter(x=>SEL.has(x.l))).slice(0,60), tp=sh(tplFor(pool()));
+  Z.list=sh([...nn,...tp.slice(0,100-nn.length)]); if(!Z.list.length) Z.list=sh(SENT.slice());
+  Z.i=0; Z.ok=0; zRender();
 }
 function tokBtn(t){
   const b=el("button","tok"); b.type="button";
@@ -1393,6 +1421,7 @@ function buildList(){
     if(!ws.length) return;
     const h=el("div","lhead");
     h.append(el("h3",null,lessonName(L)),el("span","lcn",L.cn||""),el("span","lpy py pyhide",L.py||""),el("span","lct",T(ws.length+" คำ",ws.length+" words",ws.length+" từ",ws.length+" слов")));
+    if(!L.hsk&&L.n>10) h.append(delBtn(T("ลบทั้งบท","Delete this lesson"),()=>removeLesson(L)));
     box.append(h);
     ws.slice(0,Math.max(0,300-shown)).forEach(w=>{
       shown++;
@@ -1405,7 +1434,7 @@ function buildList(){
         ex.append(el("span","excn",w.ex.cn),spkBtn(w.ex.cn,"sm"),el("span","expy py pyhide",w.ex.py),el("span","exth",exT(w.ex)));
         body.append(ex);
       }
-      r.append(spkBtn(w.cn,"sm",true),body); box.append(r);
+      r.append(spkBtn(w.cn,"sm",true),body); if(w.custom) r.append(delBtn(T("ลบคำนี้","Delete this word"),()=>removeWord(w))); box.append(r);
     });
   });
   if(!shown) box.append(el("p","hint",T("ไม่พบคำศัพท์ที่ค้นหา","No words found","Không tìm thấy từ","Ничего не найдено")));
@@ -1489,7 +1518,9 @@ document.addEventListener("keydown",e=>{
 });
 
 /* ============ เริ่มต้น ============ */
-const UI={};`ภาษา|Language|Ngôn ngữ|Язык
+const UI={};`ฟังคำถาม|Play question|Nghe câu hỏi|Вопрос
+ลบคำที่เพิ่มเองได้ที่แท็บ “คำศัพท์” (ปุ่ม ✕ ท้ายแถว) หรือลบทั้งบทที่หัวบท|You can delete words you added in the Vocabulary tab (✕ at the end of a row), or delete a whole lesson from its header|Có thể xóa từ đã thêm ở tab Từ vựng|Добавленные слова можно удалить на вкладке «Слова»
+ภาษา|Language|Ngôn ngữ|Язык
 เสียง|Voice|Giọng|Голос
 ผู้หญิง|Female|Nữ|Женский
 ผู้ชาย|Male|Nam|Мужской
@@ -1573,7 +1604,7 @@ iu วางบน u เช่น|iu: mark u, e.g.|iu: đặt trên u, vd.|iu: �
 ข้อสอบ · เกมฟังประโยค · เกมพิมพ์พินอิน · เกมถาม-ตอบ · เกมเรียงประโยค · ระบบทบทวนคำที่ผิดบ่อย|Quiz · Sentence listening · Pinyin typing · Q&A · Sentence builder · Weak-word review|Kiểm tra · Nghe câu · Gõ pinyin · Hỏi đáp · Sắp xếp câu · Ôn từ sai|Тест · Аудирование · Пиньинь · Вопрос-ответ · Фразы · Повтор
 ＋ เพิ่มคำศัพท์|＋ Add words|＋ Thêm từ|＋ Добавить слова
 แสดงข้อความ|Show text|Hiện văn bản|Показать текст
-เปิด/ปิด “แสดงข้อความ” เพื่อฝึกฟังอย่างเดียว แล้วเลือกคำแปลของประโยคที่ได้ยิน|Toggle “Show text” to practise listening only, then choose the meaning of the sentence you hear|Bật/tắt “Hiện văn bản” để chỉ luyện nghe, rồi chọn nghĩa của câu|Скрывайте текст, чтобы тренировать только слух, и выбирайте перевод
+เปิด/ปิด “แสดงข้อความ” เพื่อฝึกฟังอย่างเดียว แล้วเลือกคำแปลของประโยคที่ได้ยิน|Pick a mode above · turn off “Show text” to practise listening only|Bật/tắt “Hiện văn bản” để chỉ luyện nghe, rồi chọn nghĩa của câu|Скрывайте текст, чтобы тренировать только слух, и выбирайте перевод
 เพิ่มคำศัพท์หลายคำพร้อมกัน|Add many words at once|Thêm nhiều từ cùng lúc|Добавить много слов
 เพิ่มเข้า|Add to|Thêm vào|Добавить в
 ยกเลิก|Cancel|Hủy|Отмена
@@ -1595,9 +1626,24 @@ function applyUI(){
   }));
 }
 
+function saveCustom(){try{localStorage.setItem(CKEY,JSON.stringify(CUSTOM));}catch(e){}}
+function removeWord(w,quiet){
+  const L=LESSONS.find(x=>x.n===w.l); if(L) L.words=L.words.filter(x=>x!==w);
+  const i=WORDS.indexOf(w); if(i>=0) WORDS.splice(i,1);
+  CUSTOM.words=CUSTOM.words.filter(e=>!(e.l===w.l&&e.cn===w.cn));
+  if(L&&!L.words.length&&!L.hsk&&L.n>10){LESSONS.splice(LESSONS.indexOf(L),1);SEL.delete(L.n);CUSTOM.lessons=CUSTOM.lessons.filter(x=>x.n!==L.n);if(!SEL.size)LESSONS.forEach(x=>SEL.add(x.n));}
+  if(!quiet){saveCustom();onSel();}
+}
+function removeLesson(L){[...L.words].forEach(w=>removeWord(w,true));saveCustom();onSel();}
+function delBtn(label,fn){
+  const x=el("button","del","✕"); x.type="button"; x.title=label; let armed=false;
+  x.onclick=()=>{ if(!armed){armed=true;x.textContent=T("ยืนยันลบ","Confirm delete");x.classList.add("on");setTimeout(()=>{armed=false;x.textContent="✕";x.classList.remove("on");},3000);} else fn(); };
+  return x;
+}
 /* ============ เพิ่มคำศัพท์ (วางหลายคำ แยกบท) ============ */
 const CKEY="zhVocabCustom_v1"; let CUSTOM={lessons:[],words:[]};
 try{CUSTOM=JSON.parse(localStorage.getItem(CKEY))||CUSTOM;}catch(e){}
+let NID=WORDS.length+10;
 function ensureLesson(n,hsk){
   let L=LESSONS.find(x=>x.n===n);
   if(!L){L={n,cn:"",py:"",hsk:hsk||0,words:[]};LESSONS.push(L);LESSONS.sort((a,b)=>a.n-b.n);SEL.add(n);
@@ -1606,11 +1652,11 @@ function ensureLesson(n,hsk){
 }
 function ingest(e,save){
   const L=ensureLesson(e.l,e.hsk); if(L.words.some(w=>w.cn===e.cn)) return false;
-  const w={id:WORDS.length,l:e.l,cn:e.cn,py:(e.py||"").normalize("NFC"),th:e.th||"",en:e.en||"",vi:e.vi||"",ru:e.ru||"",ex:null};
+  const w={id:NID++,custom:!!(save||e.custom),l:e.l,cn:e.cn,py:(e.py||"").normalize("NFC"),th:e.th||"",en:e.en||"",vi:e.vi||"",ru:e.ru||"",ex:null};
   WORDS.push(w); L.words.push(w); if(save) CUSTOM.words.push({l:e.l,cn:e.cn,py:e.py,th:e.th,en:e.en,vi:e.vi,ru:e.ru,hsk:e.hsk||0});
   return true;
 }
-CUSTOM.lessons.forEach(x=>ensureLesson(x.n,x.hsk)); CUSTOM.words.forEach(e=>ingest(e,false));
+CUSTOM.lessons.forEach(x=>ensureLesson(x.n,x.hsk)); CUSTOM.words.forEach(e=>ingest({...e,custom:true},false));
 const HSK_DATA={1:`
 爱|ài|รัก|love
 爱好|ài hào|ความชอบ, สิ่งที่ชอบ|hobby
@@ -12714,47 +12760,95 @@ $("addOk").onclick=()=>{
     else if(t==="auto"&&c.head) n=c.head; else n=nextN();
     c.ws.forEach(w=>ingest({...w,l:n,hsk},true)?added++:dup++);
   });
-  try{localStorage.setItem(CKEY,JSON.stringify(CUSTOM));}catch(e){}
+  saveCustom();
   $("addInfo").textContent=T("เพิ่มแล้ว "+added+" คำ · ข้ามคำซ้ำ "+dup,"Added "+added+" · skipped "+dup+" duplicates","Đã thêm "+added+" · bỏ qua "+dup+" trùng","Добавлено: "+added+" · дубликатов: "+dup);
   if(added){$("addTxt").value="";onSel();setTimeout(()=>$("addModal").classList.add("hide"),1200);}
 };
 
 /* ============ เกมฟังประโยค ============ */
-const H={cur:null,n:0,ok:0,ng:0,lock:false};
-const sMean=s=>LANG==="th"?s.th:(s[LANG]||s.en||"");
-function hPool(){
-  let l=SENT.filter(s=>SEL.has(s.l)); if(!l.length) l=SENT;
-  const ex=pool().filter(w=>w.ex).map(w=>({id:1000+w.id,cn:w.ex.cn,py:w.ex.py,th:w.ex.th,en:w.ex.en||""}));
-  const seen=new Set(); const all=[...l,...ex].filter(s=>sMean(s)&&!seen.has(s.cn)&&seen.add(s.cn));
-  const q=all.filter(s=>/[？?]/.test(s.cn)); return q.length>=4?q:all;
-}
+const H={cur:null,n:0,ok:0,ng:0,lock:false,mode:"m",ans:0};
+const LQ=`我每天早上七点起床，八点去学校。|ฉันตื่นนอน 7 โมงเช้าทุกวัน และไปโรงเรียน 8 โมง|I get up at seven every morning and go to school at eight.|我几点去学校？|ฉันไปโรงเรียนกี่โมง|What time do I go to school?|八点|七点|九点|六点
+今天星期三，明天星期四。|วันนี้วันพุธ พรุ่งนี้วันพฤหัสบดี|Today is Wednesday, tomorrow is Thursday.|明天星期几？|พรุ่งนี้วันอะไร|What day is tomorrow?|星期四|星期三|星期五|星期六
+我家有五口人，爸爸、妈妈、哥哥、妹妹和我。|บ้านฉันมี 5 คน พ่อ แม่ พี่ชาย น้องสาวและฉัน|There are five people in my family: dad, mom, brother, sister and me.|我家有几口人？|บ้านฉันมีกี่คน|How many people are in my family?|五口人|四口人|三口人|六口人
+我喜欢喝茶，不喜欢喝咖啡。|ฉันชอบดื่มชา ไม่ชอบกาแฟ|I like tea, not coffee.|我喜欢喝什么？|ฉันชอบดื่มอะไร|What do I like to drink?|茶|咖啡|水|牛奶
+他在商店买了两个苹果和三个西瓜。|เขาซื้อแอปเปิล 2 ลูกและแตงโม 3 ลูกที่ร้านค้า|He bought two apples and three watermelons at the shop.|他买了几个苹果？|เขาซื้อแอปเปิลกี่ลูก|How many apples did he buy?|两个|三个|一个|五个
+明天是我的生日，我想请朋友吃饭。|พรุ่งนี้วันเกิดฉัน ฉันอยากเลี้ยงข้าวเพื่อน|Tomorrow is my birthday. I want to treat my friends to a meal.|明天是什么日子？|พรุ่งนี้เป็นวันอะไร|What is tomorrow?|我的生日|星期天|春节|考试
+现在是下午三点半，我在教室学习汉语。|ตอนนี้บ่ายสามครึ่ง ฉันเรียนภาษาจีนในห้องเรียน|It is 3:30 pm; I am studying Chinese in the classroom.|我在哪儿学习？|ฉันเรียนที่ไหน|Where am I studying?|教室|商店|家|医院
+今天天气很冷，我穿了很多衣服。|วันนี้อากาศหนาวมาก ฉันใส่เสื้อผ้าหลายตัว|It's very cold today, so I wore lots of clothes.|今天天气怎么样？|วันนี้อากาศเป็นอย่างไร|How is the weather today?|很冷|很热|下雨|很好
+我的朋友是医生，他在医院工作。|เพื่อนฉันเป็นหมอ เขาทำงานที่โรงพยาบาล|My friend is a doctor and works at a hospital.|他的工作是什么？|เขาทำอาชีพอะไร|What does he do?|医生|老师|学生|服务员
+昨天我去商店买了一本书和一支笔。|เมื่อวานฉันไปร้านซื้อหนังสือ 1 เล่มและปากกา 1 ด้าม|Yesterday I bought a book and a pen at a shop.|我昨天买了什么？|เมื่อวานฉันซื้ออะไร|What did I buy yesterday?|一本书和一支笔|一个杯子|两件衣服|一台电脑
+她每天坐公共汽车去公司，二十分钟就到了。|เธอนั่งรถเมล์ไปบริษัททุกวัน 20 นาทีก็ถึง|She takes the bus to work every day; it takes twenty minutes.|她怎么去公司？|เธอไปบริษัทอย่างไร|How does she go to work?|坐公共汽车|坐飞机|骑自行车|走路
+我不会游泳，但是我会打篮球。|ฉันว่ายน้ำไม่เป็น แต่เล่นบาสเกตบอลเป็น|I can't swim, but I can play basketball.|我会做什么？|ฉันทำอะไรเป็น|What can I do?|打篮球|游泳|跳舞|唱歌
+我晚上十点睡觉，早上六点半起床。|ฉันนอน 4 ทุ่ม ตื่น 6 โมงครึ่ง|I sleep at ten at night and get up at 6:30.|我几点睡觉？|ฉันนอนกี่โมง|When do I go to sleep?|十点|九点|十一点|六点半
+这个杯子一百块，那个杯子五十块，我买那个。|แก้วนี้ 100 หยวน แก้วนั้น 50 หยวน ฉันซื้อแก้วนั้น|This cup is 100 yuan, that one is 50. I'll buy that one.|那个杯子多少钱？|แก้วนั้นราคาเท่าไร|How much is that cup?|五十块|一百块|十块|二十块
+小明的爸爸是老师，妈妈是医生。|พ่อของเสี่ยวหมิงเป็นครู แม่เป็นหมอ|Xiaoming's dad is a teacher and his mom is a doctor.|小明的妈妈做什么工作？|แม่ของเสี่ยวหมิงทำงานอะไร|What does Xiaoming's mom do?|医生|老师|学生|服务员
+周末我想去北京旅游，坐飞机去。|สุดสัปดาห์ฉันอยากไปเที่ยวปักกิ่ง นั่งเครื่องบินไป|I want to travel to Beijing at the weekend, by plane.|我想去哪儿旅游？|ฉันอยากไปเที่ยวที่ไหน|Where do I want to travel?|北京|上海|学校|商店
+我们星期一到星期五上课，星期六和星期天休息。|เราเรียนวันจันทร์ถึงศุกร์ เสาร์อาทิตย์พัก|We have class Monday to Friday and rest on Saturday and Sunday.|星期六我们做什么？|วันเสาร์เราทำอะไร|What do we do on Saturday?|休息|上课|考试|工作
+我的狗很小，我的猫很大。|หมาฉันตัวเล็ก แมวฉันตัวใหญ่|My dog is small and my cat is big.|什么很大？|อะไรตัวใหญ่|What is big?|猫|狗|鱼|鸡
+我想喝一杯热茶，不想吃米饭。|ฉันอยากดื่มชาร้อน 1 แก้ว ไม่อยากกินข้าว|I'd like a cup of hot tea, and I don't want rice.|我不想吃什么？|ฉันไม่อยากกินอะไร|What don't I want to eat?|米饭|面条|苹果|鸡蛋
+现在十二点，我们去饭店吃午饭吧。|ตอนนี้เที่ยง เราไปกินข้าวกลางวันที่ร้านอาหารกันเถอะ|It's twelve now; let's go to a restaurant for lunch.|我们去哪儿吃饭？|เราไปกินข้าวที่ไหน|Where are we going to eat?|饭店|学校|公司|家
+我在中国学习汉语已经一年了。|ฉันเรียนภาษาจีนในจีนมาแล้ว 1 ปี|I have studied Chinese in China for one year.|我学习汉语多长时间了？|ฉันเรียนภาษาจีนมานานเท่าไร|How long have I studied Chinese?|一年|一个月|两年|三天
+下雨了，我没有带伞，所以不能出去玩儿。|ฝนตก ฉันไม่ได้ถือร่ม จึงออกไปเล่นไม่ได้|It's raining and I have no umbrella, so I can't go out.|为什么不能出去？|ทำไมออกไปไม่ได้|Why can't I go out?|因为下雨了|因为很累|因为生病了|因为有考试
+老师说明天上午有考试，我今天晚上要学习。|ครูบอกว่าพรุ่งนี้ช่วงเช้ามีสอบ คืนนี้ฉันต้องเรียน|The teacher says there is an exam tomorrow morning, so I must study tonight.|考试在什么时候？|สอบเมื่อไร|When is the exam?|明天上午|今天晚上|明天下午|星期天
+我的手机在桌子上，书在椅子上。|มือถือฉันอยู่บนโต๊ะ หนังสืออยู่บนเก้าอี้|My phone is on the table and my book is on the chair.|书在哪儿？|หนังสืออยู่ที่ไหน|Where is the book?|椅子上|桌子上|床上|学校里
+他今年二十岁，是大学生。|เขาอายุ 20 ปี เป็นนักศึกษามหาวิทยาลัย|He is twenty this year and is a university student.|他今年多大？|เขาอายุเท่าไร|How old is he?|二十岁|十岁|三十岁|二十五岁
+从我家到学校很近，走路十分钟就到。|จากบ้านไปโรงเรียนใกล้มาก เดิน 10 นาทีก็ถึง|My home is close to school; it takes ten minutes on foot.|我怎么去学校？|ฉันไปโรงเรียนอย่างไร|How do I get to school?|走路|开车|坐飞机|坐火车
+我姐姐喜欢唱歌，我哥哥喜欢跳舞。|พี่สาวฉันชอบร้องเพลง พี่ชายชอบเต้นรำ|My older sister likes singing; my older brother likes dancing.|谁喜欢唱歌？|ใครชอบร้องเพลง|Who likes singing?|姐姐|哥哥|妹妹|弟弟
+请问，去火车站怎么走？一直往前走，然后往右拐。|ขอถามหน่อย ไปสถานีรถไฟอย่างไร เดินตรงไปแล้วเลี้ยวขวา|Excuse me, how do I get to the train station? Go straight, then turn right.|先怎么走？|ต้องเดินอย่างไรก่อน|What do you do first?|一直往前走|往右拐|往左拐|坐公共汽车
+今天是十月十三号，星期二。|วันนี้วันที่ 13 ตุลาคม วันอังคาร|Today is Tuesday, October 13th.|今天是几月几号？|วันนี้วันที่เท่าไร|What is today's date?|十月十三号|十月十二号|九月十三号|十一月三号
+我给妈妈买了一个礼物，她很高兴。|ฉันซื้อของขวัญให้แม่ แม่ดีใจมาก|I bought a gift for my mom and she was very happy.|谁很高兴？|ใครดีใจ|Who was happy?|妈妈|爸爸|朋友|老师`.split("\n").map((l,i)=>{const p=l.split("|");return {id:5000+i,pc:p[0],pth:p[1],pen:p[2],qc:p[3],qth:p[4],qen:p[5],a:p[6],d:p.slice(7,10)};});
+const sMean=x=>LANG==="th"?x.th:(x[LANG]||x.en||"");
+const hMode=()=>$("hMode").value||"m", rnd=a=>a[Math.floor(Math.random()*a.length)];
+function fillHMode(){const e=$("hMode"),v=e.value||"m";e.innerHTML="";
+  [["m",T("ฟังประโยค → เลือกความหมาย","Sentence → choose meaning")],["q",T("ฟังเรื่องสั้น → ตอบคำถาม","Listen → answer the question")],["b",T("ฟังประโยค → เติมคำที่หายไป","Sentence → missing word")]].forEach(([k,t])=>{const o=el("option",null,t);o.value=k;e.append(o);});e.value=v;}
+function hPool(){let l=natural().filter(x=>SEL.has(x.l)&&sMean(x)); if(l.length<4) l=natural().filter(x=>sMean(x)); return l;}
+const hSp=()=>H.mode==="q"?H.cur.pc:(H.cur.spk||H.cur.cn);
 function hStart(){Object.assign(H,{cur:null,n:0,ok:0,ng:0});hNext();}
-function hNext(){const p=hPool(); if(p.length<2) return; let s; do{s=p[Math.floor(Math.random()*p.length)];}while(H.cur&&s.id===H.cur.id&&p.length>1); H.cur=s;H.n++;hRender();}
+function hNext(){
+  const m=hMode(); let s,g=0;
+  if(m==="q"){do{s=rnd(LQ);}while(H.cur&&H.mode==="q"&&s.id===H.cur.id&&++g<9);}
+  else{const p=m==="m"?hPool():(()=>{const l=natural().filter(x=>SEL.has(x.l));return l.length>=3?l:natural();})();
+    if(p.length<2) return; do{s=rnd(p);}while(H.cur&&s===H.cur&&++g<9);
+    if(m==="b") s={...s,bi:Math.floor(Math.random()*s.tok.length)};}
+  H.cur=s;H.mode=m;H.n++;hRender();
+}
 function hStats(){$("hNo").textContent=H.n;$("hOK").textContent=H.ok;$("hNG").textContent=H.ng;}
-function hRender(silent){
-  Voice.stop(); const s=H.cur; if(!s) return; H.lock=H.lock&&silent;
-  if(!silent) H.lock=false;
-  $("hCn").textContent=s.cn; $("hPy").textContent=s.py;
-  $("hText").classList.toggle("hide",!$("hShow").checked&&!H.lock);
-  $("hLabel").textContent=T("ฟังประโยคคำถามแล้วเลือกคำตอบที่ถูกต้อง","Listen to the question and choose the correct meaning","Nghe câu và chọn nghĩa đúng","Послушайте фразу и выберите перевод");
-  if(!silent){
-    const items=[s,...sh(hPool().filter(x=>x.id!==s.id&&sMean(x)!==sMean(s))).slice(0,3)];
-    buildOpts($("hOpts"),sh(items),(e,it)=>{e.textContent=sMean(it);},hAnswer);
-    $("hNote").className="note"; $("hNote").innerHTML=""; $("hNext").classList.add("hide"); hStats();
-    if(ACT&&vis("pHear")) setTimeout(()=>{if(H.cur===s&&!H.lock)Voice.say(s.cn,$("hBig"));},250);
-  }
+function hRender(){
+  Voice.stop(); const s=H.cur,m=H.mode; if(!s) return; H.lock=false; let items;
+  $("hQa").classList.toggle("hide",m!=="q"); $("hQs").textContent="";
+  if(m==="m"){$("hCn").textContent=s.cn;$("hPy").textContent=s.py||"";H.ans=s.sid;
+    items=[s,...sh(hPool().filter(x=>sMean(x)!==sMean(s))).slice(0,3)].map(x=>({id:x.sid,t:sMean(x)}));
+    $("hLabel").textContent=T("ฟังประโยคแล้วเลือกความหมายที่ถูกต้อง","Listen and choose the correct meaning");}
+  else if(m==="q"){$("hCn").textContent=s.pc;$("hPy").textContent="";H.ans=s.id;
+    $("hQs").textContent=T("คำถาม: ","Question: ")+(LANG==="th"?s.qth:s.qen);
+    items=[{id:s.id,t:s.a},...s.d.map((x,i)=>({id:s.id*10+i+1,t:x}))];
+    $("hLabel").textContent=T("ฟังเรื่องสั้น แล้วตอบคำถามด้านล่าง (กด “ฟังคำถาม” เพื่อฟังคำถามเป็นภาษาจีน)","Listen to the passage, then answer the question below (tap “Play question” to hear it in Chinese)");}
+  else{const w=s.tok[s.bi][0];H.ans=1;
+    $("hCn").textContent=s.tok.map((t,i)=>i===s.bi?"＿＿":t[0]).join(""); $("hPy").textContent=s.tok.map((t,i)=>i===s.bi?"＿＿":t[1]).join(" ");
+    const others=[...new Set(sh(natural().flatMap(x=>x.tok.map(t=>t[0]))).filter(t=>t!==w))].slice(0,3);
+    items=[{id:1,t:w},...others.map((t,i)=>({id:i+2,t}))];
+    $("hLabel").textContent=T("ฟังประโยค แล้วเลือกคำที่หายไปในช่องว่าง","Listen and choose the missing word");}
+  $("hText").classList.toggle("hide",m!=="b"&&!$("hShow").checked);
+  buildOpts($("hOpts"),sh(items),(e,it)=>{e.textContent=it.t;},hAnswer);
+  $("hNote").className="note";$("hNote").innerHTML="";$("hNext").classList.add("hide");hStats();
+  if(ACT&&vis("pHear")) setTimeout(()=>{if(H.cur===s&&!H.lock)Voice.say(hSp(),$("hBig"));},250);
 }
 function hAnswer(id){
-  if(H.lock) return; H.lock=true; const s=H.cur, ok=id===s.id; ok?H.ok++:H.ng++;
-  markOpts($("hOpts"),s.id,id); $("hText").classList.remove("hide");
+  if(H.lock) return; H.lock=true; const s=H.cur,m=H.mode,ok=id===H.ans; ok?H.ok++:H.ng++;
+  markOpts($("hOpts"),H.ans,id); $("hText").classList.remove("hide");
+  if(m==="b") $("hCn").textContent=s.tok.map(t=>t[0]).join(""),$("hPy").textContent=s.tok.map(t=>t[1]).join(" ");
   const b=$("hNote"); b.className="note show "+(ok?"right":"wrong"); b.innerHTML="";
-  b.append(el("h3",null,ok?T("ถูกต้อง","Correct","Đúng","Верно"):T("ยังไม่ถูก","Not quite","Chưa đúng","Неверно")),el("p",null,s.cn+"  "+s.py+" — "+sMean(s)));
+  b.append(el("h3",null,ok?T("ถูกต้อง","Correct"):T("ยังไม่ถูก","Not quite")));
+  if(m==="q") b.append(el("p",null,s.qc+" → "+s.a),el("p",null,s.pc+" — "+(LANG==="th"?s.pth:s.pen)));
+  else b.append(el("p",null,s.cn+"  "+(s.py||"")+" — "+sMean(s)));
   $("hNext").classList.remove("hide"); hStats();
 }
-$("hBig").innerHTML=ICON; $("hNext").onclick=hNext; $("hStartBtn").onclick=hStart;
-$("hShow").onchange=()=>$("hText").classList.toggle("hide",!$("hShow").checked&&!H.lock);
-$("hRe").onclick=()=>H.cur&&Voice.say(H.cur.cn,$("hBig")); $("hBig").onclick=$("hRe").onclick;
-$("hSlow").onclick=()=>H.cur&&Voice.say(H.cur.cn,$("hBig"),{slow:true});
+$("hBig").innerHTML=ICON; $("hNext").onclick=hNext; $("hStartBtn").onclick=hStart; $("hMode").onchange=hStart;
+$("hShow").onchange=()=>$("hText").classList.toggle("hide",H.mode!=="b"&&!$("hShow").checked);
+$("hRe").onclick=()=>H.cur&&Voice.say(hSp(),$("hBig")); $("hBig").onclick=$("hRe").onclick;
+$("hSlow").onclick=()=>H.cur&&Voice.say(hSp(),$("hBig"),{slow:true});
+$("hQa").onclick=()=>H.cur&&Voice.say(H.cur.qc,$("hBig"));
+fillHMode();
 
 hStart(); drawChips(); buildList(); qStart(); gStart(); zStart(); tUI(); buildStats(); applyUI();
 </script>
