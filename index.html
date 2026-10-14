@@ -228,6 +228,8 @@
 .lc.n:hover{border-color:var(--blue)}.lc.n.on{background:var(--blue);color:#fff}
 .del{margin-left:auto;border:1px solid var(--line);background:#fff;color:#c0392b;border-radius:8px;padding:2px 8px;cursor:pointer;font-size:.8rem;white-space:nowrap}
 .del.on{background:#c0392b;color:#fff}
+.opts small.py{display:block;font-size:.75rem;opacity:.8}
+#hQs .py{font-size:.9rem}
 </style>
 </head>
 <body>
@@ -275,7 +277,6 @@
     <button type="button" class="tb on" data-p="quiz">ข้อสอบ</button>
     <button type="button" class="tb" data-p="hear">เกมประโยคคำถาม</button>
     <button type="button" class="tb" data-p="type">เกมพิมพ์พินอิน</button>
-    <button type="button" class="tb" data-p="game">เกมถาม-ตอบ</button>
     <button type="button" class="tb" data-p="sent">เกมเรียงประโยค</button>
     <button type="button" class="tb" data-p="list">คำศัพท์</button>
     <button type="button" class="tb" data-p="stat">สถิติ</button>
@@ -350,7 +351,7 @@
 
   <div id="pHear" class="hide"><section class="card">
   <div class="bar"><div class="stats"><span class="chip">ข้อ <b id="hNo">0</b></span><span class="chip ok">ถูก <b id="hOK">0</b></span><span class="chip no">ผิด <b id="hNG">0</b></span></div>
-  <div class="row"><select id="hMode"></select><label class="toggle"><input type="checkbox" id="hShow"> แสดงข้อความ</label><button type="button" class="btn sm" id="hStartBtn">เริ่มเกมใหม่</button></div></div>
+  <div class="row"><select id="hMode"></select><label class="toggle"><input type="checkbox" id="hShow" checked> แสดงข้อความ</label><button type="button" class="btn sm" id="hStartBtn">เริ่มเกมใหม่</button></div></div>
   <div class="ask"><p class="label" id="hLabel"></p><div class="listen"><button type="button" class="spk big" id="hBig"></button>
    <div class="row center"><button type="button" class="btn ghost sm" id="hRe">ฟังอีกครั้ง</button><button type="button" class="btn ghost sm" id="hSlow">ฟังช้า</button><button type="button" class="btn ghost sm hide" id="hQa">ฟังคำถาม</button></div></div>
    <div class="hide" id="hText"><p class="cloze" id="hCn"></p><p class="pinyin py pyhide" id="hPy"></p></div></div>
@@ -469,7 +470,7 @@
       <div class="bar">
         <div>
           <h2 class="t">สถิติและคำที่ผิดบ่อย</h2>
-          <p class="sub">นับจากข้อสอบ เกมถาม-ตอบ และเกมพิมพ์พินอิน · บันทึกไว้ในเบราว์เซอร์นี้อัตโนมัติ</p>
+          <p class="sub">นับจากข้อสอบและเกมพิมพ์พินอิน · บันทึกไว้ในเบราว์เซอร์นี้อัตโนมัติ</p>
         </div>
         <div class="row">
           <button type="button" class="btn red sm" id="sPractice">ฝึกคำที่ผิดบ่อย</button>
@@ -1421,7 +1422,7 @@ function buildList(){
     if(!ws.length) return;
     const h=el("div","lhead");
     h.append(el("h3",null,lessonName(L)),el("span","lcn",L.cn||""),el("span","lpy py pyhide",L.py||""),el("span","lct",T(ws.length+" คำ",ws.length+" words",ws.length+" từ",ws.length+" слов")));
-    if(!L.hsk&&L.n>10) h.append(delBtn(T("ลบทั้งบท","Delete this lesson"),()=>removeLesson(L)));
+    if(!L.hsk&&L.n>10&&L.words.some(w=>w.custom)) h.append(delBtn(T("ลบทั้งบท","Delete this lesson"),()=>removeLesson(L)));
     box.append(h);
     ws.slice(0,Math.max(0,300-shown)).forEach(w=>{
       shown++;
@@ -1589,7 +1590,7 @@ iu วางบน u เช่น|iu: mark u, e.g.|iu: đặt trên u, vd.|iu: �
 · เสียงเบาไม่ใส่วรรณยุกต์ เช่น|· neutral tone: no mark, e.g.|· thanh nhẹ: không dấu, vd.|· нейтральный тон без знака, напр.
 ค้นหาตัวจีน พินอิน หรือคำแปล|Search Chinese, pinyin or meaning|Tìm chữ Hán, pinyin, nghĩa|Поиск слова
 สถิติและคำที่ผิดบ่อย|Statistics & weak words|Thống kê & từ hay sai|Статистика и слабые слова
-นับจากข้อสอบ เกมถาม-ตอบ และเกมพิมพ์พินอิน · บันทึกไว้ในเบราว์เซอร์นี้อัตโนมัติ|From quiz and games · saved automatically in this browser|Từ bài kiểm tra và game · tự lưu trong trình duyệt|Из теста и игр · сохраняется в браузере
+นับจากข้อสอบและเกมพิมพ์พินอิน · บันทึกไว้ในเบราว์เซอร์นี้อัตโนมัติ|From quiz and typing game · saved automatically in this browser|Từ bài kiểm tra và game · tự lưu trong trình duyệt|Из теста и игр · сохраняется в браузере
 ฝึกคำที่ผิดบ่อย|Practice weak words|Luyện từ hay sai|Тренировать слабые
 ล้างสถิติ|Reset stats|Xóa thống kê|Сбросить
 คำที่ต้องทบทวน|Words to review|Từ cần ôn|К повторению
@@ -1631,10 +1632,10 @@ function removeWord(w,quiet){
   const L=LESSONS.find(x=>x.n===w.l); if(L) L.words=L.words.filter(x=>x!==w);
   const i=WORDS.indexOf(w); if(i>=0) WORDS.splice(i,1);
   CUSTOM.words=CUSTOM.words.filter(e=>!(e.l===w.l&&e.cn===w.cn));
-  if(L&&!L.words.length&&!L.hsk&&L.n>10){LESSONS.splice(LESSONS.indexOf(L),1);SEL.delete(L.n);CUSTOM.lessons=CUSTOM.lessons.filter(x=>x.n!==L.n);if(!SEL.size)LESSONS.forEach(x=>SEL.add(x.n));}
+  if(L&&!L.words.length&&!L.hsk&&!L.builtin&&L.n>10){LESSONS.splice(LESSONS.indexOf(L),1);SEL.delete(L.n);CUSTOM.lessons=CUSTOM.lessons.filter(x=>x.n!==L.n);if(!SEL.size)LESSONS.forEach(x=>SEL.add(x.n));}
   if(!quiet){saveCustom();onSel();}
 }
-function removeLesson(L){[...L.words].forEach(w=>removeWord(w,true));saveCustom();onSel();}
+function removeLesson(L){L.words.filter(w=>w.custom).forEach(w=>removeWord(w,true));saveCustom();onSel();}
 function delBtn(label,fn){
   const x=el("button","del","✕"); x.type="button"; x.title=label; let armed=false;
   x.onclick=()=>{ if(!armed){armed=true;x.textContent=T("ยืนยันลบ","Confirm delete");x.classList.add("on");setTimeout(()=>{armed=false;x.textContent="✕";x.classList.remove("on");},3000);} else fn(); };
@@ -12711,9 +12712,9 @@ Object.entries(HSK_DATA).forEach(([k,t])=>t.trim().split("\n").forEach(l=>{const
 LESSONS.filter(L=>L.hsk).forEach(L=>SEL.delete(L.n));
 const TH=/[\u0E00-\u0E7F]/, CN=/[\u4e00-\u9fff]/;
 function parseLine(line){
-  line=line.replace(/^\s*\d+\s*[.)、]\s*/,"").trim(); if(!line) return null;
+  line=line.replace(/^\s*[*•]\s*/,"").replace(/^\s*\d+\s*[.)、]\s*/,"").trim(); if(!line) return null;
   if(line.includes("|")){const p=line.split("|").map(s=>s.trim()); return CN.test(p[0])&&p[1]?{cn:p[0],py:p[1],th:p[2]||"",en:p[3]||"",vi:p[7]||"",ru:p[8]||""}:null;}
-  const m=line.match(/^([\u4e00-\u9fff]+(?:[(（][\u4e00-\u9fff]+[)）])?(?:\s*\/\s*[\u4e00-\u9fff]+(?:[(（][\u4e00-\u9fff]+[)）])?)*)\s*([(（].*)$/); if(!m) return null;
+  const m=line.match(/^([\u4e00-\u9fff…]+(?:[(（][\u4e00-\u9fff]+[)）])?(?:\s*\/\s*[\u4e00-\u9fff]+(?:[(（][\u4e00-\u9fff]+[)）])?)*)\s*([(（].*)$/); if(!m) return null;
   const vs=m[1].split("/").map(s=>s.replace(/[()（）\s]/g,"")); const r=m[2]; let d=0,end=-1;
   for(let i=0;i<r.length;i++){const c=r[i]; if(c==="("||c==="（")d++; else if(c===")"||c==="）"){d--; if(!d){end=i;break;}}}
   if(end<0) return null;
@@ -12721,7 +12722,9 @@ function parseLine(line){
   let rest=r.slice(end+1).replace(/^\s*[=\-–—:：]\s*/,"").replace(/\((?:คำศัพท์เพิ่มเติม|extra)\)/g,"").trim();
   if(!pp.length||!rest) return null;
   const o={cn:vs[0],py:pp[0].replace(/[()]/g,""),th:"",en:"",vi:"",ru:""};
-  if(TH.test(rest)) o.th=rest+(vs.length>1?" ("+vs.slice(1).join("/")+")":""); else o.en=rest;
+  const em=rest.match(/^(.*?)\s*\(([A-Za-z][^()]*)\)\s*$/);
+  if(em&&TH.test(em[1])){o.th=em[1];o.en=em[2];} else if(TH.test(rest)) o.th=rest; else o.en=rest;
+  if(vs.length>1&&o.th) o.th+=" ("+vs.slice(1).join("/")+")";
   return o;
 }
 function parseVocab(text){
@@ -12729,12 +12732,128 @@ function parseVocab(text){
   const ch=[{head:null,ws:[]}],bad=[];
   text.split("\n").forEach(raw=>{
     const l=raw.trim(); if(!l) return;
-    const h=l.match(/^(?:คำศัพท์\s*บท(?:ที่)?\s*(\d+)|lesson\s*(\d+))$/i);
+    const h=l.match(/^(?:(?:คำศัพท์\s*)?บท(?:ที่)?\s*(\d+)|lesson\s*(\d+))\s*$/i);
     if(h){ch.push({head:+(h[1]||h[2]),ws:[]});return;}
     const w=parseLine(l); if(w) ch[ch.length-1].ws.push(w); else bad.push(l);
   });
   return {ch:ch.filter(c=>c.ws.length),bad};
 }
+const ADD_RAW=`บท 10
+1. 城市 (chéngshì) - เมือง (city)
+2. 公园 (gōngyuán) - สวนสาธารณะ (park)
+3. 那里 (nàli) - ที่นั่น (that place, there)
+4. 山 (shān) - ภูเขา (hill, mountain)
+5. 水 (shuǐ) - น้ำ (water)
+6. 树 (shù) - ต้นไม้ (tree)
+7. 花 (huā) - ดอกไม้ (flower, blossom)
+8. 风景 (fēngjǐng) - ทิวทัศน์/วิว (scenery, landscape)
+9. 非常 (fēicháng) - มาก (very, extremely)
+10. 漂亮 (piàoliang) - สวย (beautiful)
+11. 空气 (kōngqì) - อากาศ (air, atmosphere)
+12. 新鲜 (xīnxiān) - สดชื่น/สดใหม่ (fresh)
+13. 多 (duō) - เยอะ/มาก (many, much)
+14. 爬山 (pá shān) - ปีนเขา (climb a mountain)
+* 爬 (pá) - ปีน (climb)
+15. 呼吸 (hūxī) - หายใจ (breathe)
+16. 西山公园 (Xīshān Gōngyuán) - สวนสาธารณะซีซาน (Xishan Park)
+17. 忙 (máng) - ยุ่ง (busy)
+18. 听说 (tīngshuō) - ได้ยินมาว่า (hear of, be told)
+19. 出发 (chūfā) - ออกเดินทาง (set out, start off)
+20. 找 (zhǎo) - หา/ไปหา (look for, want to see)
+21. 大家 (dàjiā) - ทุกคน (everyone, all)
+22. 累 (lèi) - เหนื่อย (tired)
+23. 觉得 (juéde) - รู้สึกว่า/คิดว่า (think, feel)
+24. 休息 (xiūxi) - พักผ่อน (take a rest)
+25. 一下 (yíxià) - สักครู่/แป๊บหนึ่ง (short duration / a bit)
+26. 小 (xiǎo) - เล็ก (small, little)
+27. 茶馆 (cháguǎn) - ร้านชา (teahouse)
+* 茶 (chá) - ชา (tea)
+28. 喝 (hē) - ดื่ม (drink)
+29. 一点儿 (yìdiǎnr) - นิดหน่อย/นิดนึง (a little, a bit)
+30. 冷 (lěng) - หนาว (cold)
+31. 热 (rè) - ร้อน (hot)
+32. 饿 (è) - หิว (hungry)
+33. 渴 (kě) - หิวน้ำ/กระหาย (thirsty)
+34. 贵 (guì) - แพง (expensive)
+35. 便宜 (piányi) - ถูก (cheap)
+บท 11
+1. 同屋 (tóngwū) - เพื่อนร่วมห้อง (roommate)
+2. 在 (zài) - อยู่, ที่ (at, in, on)
+3. 家 (jiā) - บ้าน / ลักษณนามของครอบครัวหรือกิจการร้านค้า (used for families or business establishments)
+4. 汽车 (qìchē) - รถยนต์ (motor vehicle, car, auto)
+5. 公司 (gōngsī) - บริษัท (company, corporation)
+6. 工作 (gōngzuò) - ทำงาน / งาน (work)
+7. 从……到…… (cóng... dào...) - จาก...ถึง... (from... to / till...)
+* 从 (cóng) - จาก (from, since)
+* 到 (dào) - ถึง (up until, up to, by)
+8. 上班 (shàng bān) - ไปทำงาน, เข้าเวร (go to work, be on duty)
+9. 周末 (zhōumò) - วันหยุดสุดสัปดาห์ (weekend)
+10. 平时 (píngshí) - เวลาปกติ, ยามปกติ (ordinary times, normal times)
+11. 学校 (xuéxiào) - โรงเรียน, สถานศึกษา (school, educational institution)
+12. 食堂 (shítáng) - โรงอาหาร (canteen, cafeteria)
+13. ……的时候 (...de shíhou) - ตอนที่..., เมื่อ... (when, while)
+* 时候 (shíhou) - เวลา, ช่วงเวลา (the duration of time)
+14. 做饭 (zuò fàn) - ทำอาหาร (prepare a meal)
+15. 菜 (cài) - กับข้าว, อาหาร, ผัก (dish, course)
+16. 聊天儿 (liáo tiānr) - พูดคุย (chat)
+17. 晚饭 (wǎnfàn) - อาหารเย็น (supper, dinner)
+18. 手机 (shǒujī) - โทรศัพท์มือถือ (mobile phone, cell phone)
+19. 号码 (hàomǎ) - เบอร์, หมายเลข (number)
+20. 不用 (búyòng) - ไม่ต้อง (need not, no need to)
+* 用 (yòng) - ใช้ / จำเป็น (need, have to)
+21. 干 (gàn) - ทำ (do, work)
+22. 宿舍 (sùshè) - หอพัก (dormitory)
+23. 画 (huà) - วาด (draw, paint)
+24. 画儿 (huàr) - ภาพวาด, รูปภาพ (drawing, painting, picture)
+25. 喜欢 (xǐhuan) - ชอบ (like, love, be fond of)
+26. 中国画 (zhōngguóhuà) - ภาพวาดพู่กันจีน (traditional Chinese painting)
+27. 一般 (yībān) - ทั่วไป, ปกติ (general, ordinary, usual)
+28. 听 (tīng) - ฟัง (listen, hear)
+29. 音乐 (yīnyuè) - ดนตรี, เพลง (music)
+30. 东西 (dōngxi) - สิ่งของ (thing, stuff)
+31. 一块儿 (yíkuàir) - ด้วยกัน (together, in company)
+32. 收拾 (shōushi) - จัดเก็บ, เก็บกวาด (put in order, tidy up, clear away)
+33. 房间 (fángjiān) - ห้อง (room)
+บทที่ 12
+1. 学期 (xuéqī) - ภาคเรียน, เทอม (term, semester)
+2. 门 (mén) - ลักษณนามของวิชาเรียนหรือการฝึกอบรม (used for fields of study or technical training)
+3. 兴趣 (xìngqù) - ความสนใจ (interest)
+4. 课 (kè) - วิชา, บทเรียน (course, subject)
+5. 对 (duì) - กับ, สำหรับ (regarding, concerning)
+6. 书法 (shūfǎ) - การเขียนพู่กันจีน, คัดลายมือ (calligraphy)
+7. 太极拳 (tàijíquán) - มวยไทเก็ก (taijiquan, Chinese shadow boxing)
+8. 感兴趣 (gǎn xìngqù) - สนใจ (be interested in)
+9. 可是 (kěshì) - แต่, แต่ว่า (but, yet, however)
+10. 一样 (yíyàng) - เหมือนกัน (same, identical)
+11. 选 (xuǎn) - เลือก (select, choose)
+12. 还是 (háishi) - หรือ (ใช้ในประโยคคำถาม) (or)
+13. 下 (xià) - ต่อไป, หน้า (next)
+14. 语言学院 (Yǔyán Xuéyuàn) - วิทยาลัยภาษา (Language College)
+15. 运动 (yùndòng) - กีฬา, ออกกำลังกาย (sports, athletics, exercise)
+16. 跑步 (pǎo bù) - วิ่ง (run, jog)
+17. 身体 (shēntǐ) - ร่างกาย, สุขภาพ (body, health)
+18. 爱好 (àihào) - งานอดิเรก, ความชอบ (hobby)
+19. 踢 (tī) - เตะ (kick, play)
+20. 足球 (zúqiú) - ฟุตบอล (football, soccer)
+21. 打 (dǎ) - ตี, เล่น (กีฬาที่ใช้มือ) (play)
+22. 篮球 (lánqiú) - บาสเกตบอล (basketball)
+23. 最 (zuì) - ที่สุด (most, least, best)
+24. 骑 (qí) - ขี่ (ride)
+25. 自行车 (zìxíngchē) - รถจักรยาน (bicycle, bike)
+26. 报名 (bào míng) - ลงชื่อ, สมัคร (enter one's name, sign up)
+27. 咖啡 (kāfēi) - กาแฟ (coffee)
+28. 位 (wèi) - ท่าน (ลักษณนามสุภาพสำหรับคน) (used in deferential reference to people)
+29. 红茶 (hóngchá) - ชาแดง / ชาดำ (black tea)
+30. 绿茶 (lǜchá) - ชาเขียว (green tea)
+31. 杯 (bēi) - แก้ว, ถ้วย (แก้วน้ำ/ลักษณนาม) (cup)
+32. 没错儿 (méi cuòr) - ไม่ผิด, ถูกต้องแล้ว (right, exactly)
+33. 排球 (páiqiú) - วอลเลย์บอล (volleyball)
+34. 网球 (wǎngqiú) - เทนนิส (tennis)
+35. 乒乓球 (pīngpāngqiú) - ปิงปอง (table tennis)
+36. 羽毛球 (yǔmáoqiú) - แบดมินตัน (badminton)
+37. 唱歌 (chàng gē) - ร้องเพลง (sing)
+38. 跳舞 (tiào wǔ) - เต้นรำ (dance)`;
+parseVocab(ADD_RAW).ch.forEach(c=>{if(!c.head)return;const L=ensureLesson(c.head,0);L.builtin=true;c.ws.forEach(w=>ingest({...w,l:c.head,hsk:0},false));});
 function fillTargets(){
   const s=$("addTarget"); s.innerHTML="";
   const add=(v,t)=>{const o=el("option",null,t);o.value=v;s.append(o);};
@@ -12766,7 +12885,101 @@ $("addOk").onclick=()=>{
 };
 
 /* ============ เกมฟังประโยค ============ */
-const H={cur:null,n:0,ok:0,ng:0,lock:false,mode:"m",ans:0};
+const H={cur:null,n:0,ok:0,ng:0,lock:false,mode:"s",ans:0};
+const STORIES=[];
+`@เจนนี่ไปซื้อของ|Jenny Goes Shopping|今天是星期六，珍妮和妈妈去商店买东西。商店在学校旁边，走路十分钟就到。珍妮买了一个红色的书包，还买了三支铅笔。妈妈给她买了一杯牛奶。珍妮很高兴。|วันนี้วันเสาร์ เจนนี่กับแม่ไปซื้อของที่ร้านค้า ร้านอยู่ข้างโรงเรียน เดิน 10 นาทีก็ถึง เจนนี่ซื้อกระเป๋านักเรียนสีแดง 1 ใบ และดินสอ 3 ด้าม แม่ซื้อนมให้ 1 แก้ว เจนนี่ดีใจมาก|Today is Saturday. Jenny and her mom go shopping. The shop is next to the school, ten minutes on foot. Jenny buys a red schoolbag and three pencils. Mom buys her a glass of milk. Jenny is very happy.
+?珍妮和谁去商店？|เจนนี่ไปร้านกับใคร|Who does Jenny go to the shop with?|妈妈|爸爸|老师|朋友
+?商店在哪儿？|ร้านอยู่ที่ไหน|Where is the shop?|学校旁边|医院里|家后面|公司前面
+?珍妮买了几支铅笔？|เจนนี่ซื้อดินสอกี่ด้าม|How many pencils did Jenny buy?|三支|两支|五支|一支
+?书包是什么颜色的？|กระเป๋าสีอะไร|What color is the schoolbag?|红色|黑色|白色|蓝色
+@เจนนี่ไปซูเปอร์มาร์เก็ต|Jenny Goes to the Supermarket|珍妮今天要去超市。她先坐公共汽车，然后走路五分钟。超市里有很多东西。她要买牛奶、面包和鸡蛋。买完东西，她回家做饭。|เจนนี่วันนี้จะไปซูเปอร์มาร์เก็ต เธอนั่งรถเมล์ก่อน แล้วเดินอีก 5 นาที ในซูเปอร์มาร์เก็ตมีของเยอะ เธอจะซื้อนม ขนมปัง และไข่ ซื้อเสร็จเธอกลับบ้านทำกับข้าว|Jenny is going to the supermarket today. She takes the bus first, then walks five minutes. There are lots of things in the supermarket. She wants to buy milk, bread and eggs. After shopping she goes home to cook.
+?珍妮要去哪儿？|เจนนี่จะไปไหน|Where is Jenny going?|超市|学校|医院|公园
+?她怎么去？|เธอไปอย่างไร|How does she go?|先坐公共汽车，然后走路|开车|坐飞机|骑自行车
+?她要买什么？|เธอจะซื้ออะไร|What does she want to buy?|牛奶、面包和鸡蛋|水果和肉|书和笔|衣服
+?买完东西她做什么？|ซื้อเสร็จเธอทำอะไร|What does she do after shopping?|回家做饭|去学校|看电影|睡觉
+@ตอนเช้าของเสี่ยวหมิง|Xiaoming's Morning|小明每天早上六点半起床。他先洗脸，然后吃早饭。早饭他喜欢吃鸡蛋和面包，还喝一杯牛奶。七点半，爸爸开车送他去学校。八点上课。|เสี่ยวหมิงตื่น 6 โมงครึ่งทุกวัน ล้างหน้าก่อน แล้วกินอาหารเช้า ชอบกินไข่กับขนมปัง และดื่มนม 1 แก้ว 7 โมงครึ่งพ่อขับรถไปส่งที่โรงเรียน 8 โมงเข้าเรียน|Xiaoming gets up at 6:30 every day. He washes his face first, then eats breakfast. He likes eggs and bread and drinks a glass of milk. At 7:30 Dad drives him to school. Class starts at eight.
+?小明几点起床？|เสี่ยวหมิงตื่นกี่โมง|What time does Xiaoming get up?|六点半|七点半|八点|六点
+?早饭他吃什么？|เขากินอะไรเป็นอาหารเช้า|What does he eat for breakfast?|鸡蛋和面包|米饭和鱼|面条|苹果和香蕉
+?谁送小明去学校？|ใครไปส่งเสี่ยวหมิงที่โรงเรียน|Who takes Xiaoming to school?|爸爸|妈妈|哥哥|老师
+?几点上课？|เรียนกี่โมง|When does class start?|八点|七点|九点|七点半
+@สัตว์เลี้ยงของลี่ลี่|Lili's Pets|丽丽家有一只小狗和两只小猫。小狗叫来来，是白色的。小猫是黑色的，一只叫咪咪，一只叫豆豆。丽丽每天放学回家，先和小狗玩儿，然后给小猫吃鱼。她很喜欢她的小动物。|บ้านลี่ลี่มีลูกสุนัข 1 ตัวและลูกแมว 2 ตัว ลูกสุนัขชื่อไหลไหล สีขาว ลูกแมวสีดำ ตัวหนึ่งชื่อหมีหมี อีกตัวชื่อโต้วโต้ว ทุกวันหลังเลิกเรียนลี่ลี่กลับบ้าน เล่นกับลูกสุนัขก่อน แล้วให้ปลาแมวกิน เธอรักสัตว์เลี้ยงของเธอมาก|Lili has a puppy and two kittens. The puppy is called Laile and is white. The kittens are black; one is Mimi and one is Doudou. Every day after school Lili plays with the puppy first, then feeds the kittens fish. She loves her pets.
+?丽丽家有几只小猫？|บ้านลี่ลี่มีลูกแมวกี่ตัว|How many kittens does Lili have?|两只|一只|三只|四只
+?小狗是什么颜色的？|ลูกสุนัขสีอะไร|What color is the puppy?|白色|黑色|红色|黄色
+?丽丽先做什么？|ลี่ลี่ทำอะไรก่อน|What does Lili do first?|和小狗玩儿|给小猫吃鱼|写字|看电视
+?小猫吃什么？|ลูกแมวกินอะไร|What do the kittens eat?|鱼|肉|米饭|苹果
+@วันเกิดของเดวิด|David's Birthday|今天是十月五号，是大卫的生日。他八岁了。下午，他的朋友们来他家玩儿。妈妈做了一个大蛋糕，爸爸买了很多水果。朋友们送给他一本书和一个足球。大卫很高兴。|วันนี้วันที่ 5 ตุลาคม เป็นวันเกิดของเดวิด เขาอายุ 8 ขวบแล้ว ช่วงบ่ายเพื่อน ๆ มาเล่นที่บ้าน แม่ทำเค้กก้อนใหญ่ พ่อซื้อผลไม้เยอะแยะ เพื่อน ๆ ให้หนังสือ 1 เล่มและลูกฟุตบอล 1 ลูก เดวิดดีใจมาก|Today is October 5th, David's birthday. He is eight now. In the afternoon his friends come to his house to play. Mom makes a big cake and Dad buys lots of fruit. His friends give him a book and a football. David is very happy.
+?大卫今年几岁？|เดวิดอายุเท่าไร|How old is David?|八岁|七岁|九岁|十岁
+?谁做了蛋糕？|ใครทำเค้ก|Who made the cake?|妈妈|爸爸|朋友|老师
+?朋友们送给他什么？|เพื่อนให้อะไรเขา|What did his friends give him?|一本书和一个足球|一个杯子|两件衣服|一只小狗
+?大卫的生日是几月几号？|วันเกิดเดวิดคือวันที่เท่าไร|When is David's birthday?|十月五号|十月八号|五月十号|八月五号
+@วันฝนตก|A Rainy Day|今天下雨了，天气很冷。小红没有带雨伞。放学的时候，她的同学小华说：我们一起走吧！小华有一把大雨伞。他们一起走路回家。小红说：谢谢你！小华说：不客气！|วันนี้ฝนตก อากาศหนาว เสี่ยวหงไม่ได้เอาร่มมา ตอนเลิกเรียน เสี่ยวหัวเพื่อนร่วมชั้นพูดว่า เราไปด้วยกันเถอะ เสี่ยวหัวมีร่มใหญ่ 1 คัน ทั้งสองเดินกลับบ้านด้วยกัน เสี่ยวหงพูดว่า ขอบคุณนะ เสี่ยวหัวตอบว่า ไม่เป็นไร|It is raining and cold today. Xiaohong did not bring an umbrella. After school her classmate Xiaohua says, "Let's go together!" Xiaohua has a big umbrella. They walk home together. Xiaohong says, "Thank you!" Xiaohua says, "You're welcome!"
+?今天天气怎么样？|วันนี้อากาศเป็นอย่างไร|How is the weather today?|下雨，很冷|很热|下雪|晴天
+?谁没有带雨伞？|ใครไม่ได้เอาร่มมา|Who didn't bring an umbrella?|小红|小华|老师|妈妈
+?他们怎么回家？|พวกเขากลับบ้านอย่างไร|How do they go home?|走路|坐公共汽车|坐出租车|骑自行车
+?小红说什么？|เสี่ยวหงพูดว่าอะไร|What does Xiaohong say?|谢谢你|对不起|再见|没关系
+@ที่สวนสัตว์|At the Zoo|星期天，我们全家去动物园。动物园里有大象、猴子、熊猫和老虎。我最喜欢熊猫，因为它们很可爱。弟弟喜欢猴子，他看了很久。中午我们在公园里吃面包，下午四点回家。|วันอาทิตย์ ทั้งครอบครัวไปสวนสัตว์ ในสวนสัตว์มีช้าง ลิง แพนด้า และเสือ ฉันชอบแพนด้าที่สุดเพราะน่ารัก น้องชายชอบลิง ดูอยู่นาน เที่ยงเรากินขนมปังในสวน บ่าย 4 โมงกลับบ้าน|On Sunday our whole family goes to the zoo. There are elephants, monkeys, pandas and tigers. I like pandas best because they are cute. My younger brother likes monkeys and watches them for a long time. At noon we eat bread in the park and go home at four.
+?他们星期几去动物园？|พวกเขาไปสวนสัตว์วันอะไร|Which day do they go to the zoo?|星期天|星期六|星期五|星期一
+?我最喜欢什么动物？|ฉันชอบสัตว์อะไรที่สุด|Which animal do I like best?|熊猫|大象|老虎|猴子
+?弟弟喜欢什么？|น้องชายชอบอะไร|What does the younger brother like?|猴子|熊猫|大象|老虎
+?他们几点回家？|พวกเขากลับบ้านกี่โมง|When do they go home?|下午四点|下午三点|下午五点|中午
+@ในห้องเรียน|In the Classroom|我们的教室很大。教室里有二十个学生，十个男生，十个女生。老师姓王，她是我们的汉语老师。今天上午第一节课学习汉字，第二节课唱歌。我很喜欢唱歌。|ห้องเรียนของเราใหญ่มาก มีนักเรียน 20 คน ชาย 10 หญิง 10 ครูแซ่หวาง เป็นครูสอนภาษาจีน เช้านี้คาบแรกเรียนอักษรจีน คาบสองร้องเพลง ฉันชอบร้องเพลงมาก|Our classroom is big. There are twenty students, ten boys and ten girls. Teacher Wang is our Chinese teacher. This morning the first class is Chinese characters and the second is singing. I like singing very much.
+?教室里有多少个学生？|ในห้องมีนักเรียนกี่คน|How many students are there?|二十个|十个|三十个|十二个
+?老师姓什么？|ครูแซ่อะไร|What is the teacher's surname?|王|李|张|刘
+?第一节课学习什么？|คาบแรกเรียนอะไร|What is the first class?|汉字|唱歌|英语|游泳
+?我喜欢什么？|ฉันชอบอะไร|What do I like?|唱歌|游泳|跳舞|看书
+@ซื้อผลไม้|Buying Fruit|奶奶让我去买水果。水果店在我家前面。我买了两斤苹果、两斤香蕉和一个西瓜。苹果五块钱一斤，香蕉四块钱一斤，西瓜十块钱。我给了老板五十块，他找给我二十二块。|คุณย่าให้ฉันไปซื้อผลไม้ ร้านผลไม้อยู่ข้างหน้าบ้าน ฉันซื้อแอปเปิล 2 จิน กล้วย 2 จิน และแตงโม 1 ลูก แอปเปิลจินละ 5 หยวน กล้วยจินละ 4 หยวน แตงโม 10 หยวน ฉันให้เจ้าของร้าน 50 หยวน เขาทอนให้ 22 หยวน|Grandma asks me to buy fruit. The fruit shop is in front of my house. I buy two jin of apples, two jin of bananas and a watermelon. Apples are five yuan a jin, bananas four yuan a jin, the watermelon ten yuan. I give the owner fifty yuan and he gives me twenty-two yuan change.
+?谁让我去买水果？|ใครให้ฉันไปซื้อผลไม้|Who asks me to buy fruit?|奶奶|妈妈|爸爸|老师
+?我买了几斤苹果？|ฉันซื้อแอปเปิลกี่จิน|How many jin of apples did I buy?|两斤|一斤|三斤|五斤
+?西瓜多少钱？|แตงโมราคาเท่าไร|How much is the watermelon?|十块钱|五块钱|四块钱|二十块钱
+?老板找给我多少钱？|เจ้าของร้านทอนให้เท่าไร|How much change do I get?|二十二块|二十块|十二块|三十二块
+@ไปเที่ยวปักกิ่ง|A Trip to Beijing|暑假的时候，我和爸爸妈妈去北京旅游。我们坐飞机去，两个小时就到了。在北京，我们去了长城，还吃了北京烤鸭。长城很长，我走了很久，有一点儿累。我拍了很多照片。|ช่วงปิดเทอมฤดูร้อน ฉันไปเที่ยวปักกิ่งกับพ่อแม่ นั่งเครื่องบินไป 2 ชั่วโมงก็ถึง ที่ปักกิ่งเราไปกำแพงเมืองจีนและกินเป็ดปักกิ่ง กำแพงเมืองจีนยาวมาก ฉันเดินอยู่นานเลยเหนื่อยนิดหน่อย ฉันถ่ายรูปเยอะมาก|During summer vacation I travel to Beijing with my parents. We go by plane and it takes two hours. In Beijing we visit the Great Wall and eat Peking duck. The Great Wall is very long; I walk for a long time and feel a bit tired. I take many photos.
+?他们怎么去北京？|พวกเขาไปปักกิ่งอย่างไร|How do they go to Beijing?|坐飞机|坐火车|坐公共汽车|开车
+?路上要多长时间？|ใช้เวลาเดินทางนานเท่าไร|How long does the trip take?|两个小时|一个小时|三个小时|四个小时
+?他们去了哪儿？|พวกเขาไปที่ไหน|Where did they go?|长城|动物园|海边|学校
+?他们吃了什么？|พวกเขากินอะไร|What did they eat?|北京烤鸭|面条|饺子|米饭
+@เกมฟุตบอล|The Football Match|今天下午，我们班和三班踢足球。我们班有十一个人。小刚踢得最好，他进了两个球。最后我们三比一赢了。大家都很高兴，老师请我们喝可乐。|บ่ายนี้ห้องเรากับห้อง 3 เตะฟุตบอล ห้องเรามี 11 คน เสี่ยวกังเตะเก่งที่สุด ยิงได้ 2 ประตู สุดท้ายเราชนะ 3 ต่อ 1 ทุกคนดีใจมาก ครูเลี้ยงโคล่า|This afternoon our class plays football against Class 3. We have eleven players. Xiaogang plays best and scores two goals. In the end we win three to one. Everyone is happy and the teacher buys us cola.
+?他们和几班踢足球？|พวกเขาเตะบอลกับห้องไหน|Which class do they play against?|三班|二班|四班|五班
+?谁踢得最好？|ใครเตะเก่งที่สุด|Who plays best?|小刚|小明|小华|小红
+?小刚进了几个球？|เสี่ยวกังยิงได้กี่ประตู|How many goals does Xiaogang score?|两个|一个|三个|四个
+?老师请他们喝什么？|ครูเลี้ยงอะไร|What does the teacher buy them?|可乐|茶|牛奶|水
+@ที่ร้านอาหาร|At the Restaurant|星期五晚上，爸爸请我们去饭店吃饭。我们点了一条鱼、一个青菜和三碗米饭。妹妹不喜欢吃鱼，她要吃鸡蛋。服务员很快就拿来了菜。我们吃得很饱。|คืนวันศุกร์ พ่อเลี้ยงข้าวพวกเราที่ร้านอาหาร เราสั่งปลา 1 ตัว ผัก 1 จาน และข้าว 3 ชาม น้องสาวไม่ชอบกินปลา เธอเลยขอกินไข่ พนักงานยกอาหารมาให้เร็วมาก เรากินอิ่มมาก|On Friday evening Dad treats us to dinner at a restaurant. We order a fish, a vegetable dish and three bowls of rice. My younger sister doesn't like fish, so she wants eggs. The waiter brings the food quickly. We eat until we are full.
+?他们星期几去饭店？|พวกเขาไปร้านอาหารวันอะไร|Which day do they go to the restaurant?|星期五|星期六|星期天|星期四
+?谁请他们吃饭？|ใครเลี้ยงข้าว|Who treats them?|爸爸|妈妈|爷爷|老师
+?他们点了几碗米饭？|สั่งข้าวกี่ชาม|How many bowls of rice?|三碗|两碗|四碗|一碗
+?妹妹要吃什么？|น้องสาวขอกินอะไร|What does the younger sister want?|鸡蛋|鱼|青菜|面条
+@ก่อนนอน|Bedtime|晚上八点，我洗澡，然后刷牙。妈妈给我讲了一个小故事，是关于一只小兔子的。小兔子很喜欢吃红萝卜。九点，我关上灯，睡觉了。|2 ทุ่ม ฉันอาบน้ำแล้วแปรงฟัน แม่เล่านิทานให้ฟังเรื่องกระต่ายน้อย กระต่ายชอบกินแครอท 3 ทุ่ม ฉันปิดไฟแล้วเข้านอน|At eight in the evening I take a bath and then brush my teeth. Mom tells me a short story about a little rabbit. The rabbit loves eating carrots. At nine I turn off the light and go to sleep.
+?我几点洗澡？|ฉันอาบน้ำกี่โมง|When do I take a bath?|八点|九点|七点|十点
+?妈妈讲了什么故事？|แม่เล่านิทานเรื่องอะไร|What story does Mom tell?|小兔子|小狗|大象|小鸟
+?小兔子喜欢吃什么？|กระต่ายชอบกินอะไร|What does the rabbit like to eat?|红萝卜|苹果|鱼|青菜
+?我几点睡觉？|ฉันนอนกี่โมง|When do I go to sleep?|九点|八点|十点|七点
+@ที่สวนสาธารณะ|In the Park|周末天气很好，我和哥哥去公园玩儿。公园里有很多花，红的、黄的、白的。哥哥骑自行车，我在后面跑步。我们看见一个小朋友在放风筝，风筝是一只蓝色的鸟。|สุดสัปดาห์อากาศดีมาก ฉันกับพี่ชายไปเล่นที่สวนสาธารณะ มีดอกไม้เยอะ สีแดง เหลือง ขาว พี่ชายขี่จักรยาน ฉันวิ่งตามหลัง เห็นเด็กคนหนึ่งกำลังเล่นว่าว ว่าวเป็นนกสีฟ้า|The weather is lovely at the weekend, so my older brother and I go to the park. There are many flowers: red, yellow and white. My brother rides a bike and I run behind. We see a child flying a kite shaped like a blue bird.
+?"我"和谁去公园？|ฉันไปสวนสาธารณะกับใคร|Who do I go to the park with?|哥哥|姐姐|爸爸|同学
+?公园里的花有什么颜色？|ดอกไม้มีสีอะไรบ้าง|What colors are the flowers?|红的、黄的、白的|黑的、蓝的|只有红的|绿的、黑的
+?哥哥做什么？|พี่ชายทำอะไร|What does my brother do?|骑自行车|跑步|踢球|唱歌
+?风筝是什么样的？|ว่าวเป็นแบบไหน|What does the kite look like?|一只蓝色的鸟|一条鱼|一个西瓜|一架飞机
+@เพื่อนใหม่|A New Friend|今天班里来了一个新同学，她叫安娜，是从美国来的。安娜今年九岁，会说一点儿汉语。老师让我和她坐在一起。下课以后，我们一起玩儿，她说：我很喜欢你们的学校！|วันนี้ห้องมีเพื่อนใหม่ ชื่อแอนนา มาจากอเมริกา แอนนาอายุ 9 ขวบ พูดภาษาจีนได้นิดหน่อย ครูให้ฉันนั่งกับเธอ เลิกเรียนเราเล่นด้วยกัน เธอพูดว่า ฉันชอบโรงเรียนของพวกเธอมาก|A new classmate called Anna joins our class today. She comes from America. Anna is nine and speaks a little Chinese. The teacher lets me sit with her. After class we play together and she says, "I really like your school!"
+?新同学叫什么？|เพื่อนใหม่ชื่ออะไร|What is the new classmate called?|安娜|丽丽|小红|珍妮
+?她从哪儿来？|เธอมาจากไหน|Where is she from?|美国|中国|英国|日本
+?她今年几岁？|เธออายุเท่าไร|How old is she?|九岁|八岁|十岁|七岁
+?她会说什么？|เธอพูดอะไรได้|What can she speak?|一点儿汉语|很多汉语|法语|不会说话`.split("\n").forEach(l=>{
+  if(l[0]==="@"){const p=l.slice(1).split("|");STORIES.push({id:STORIES.length+1,tt:p[0],te:p[1],cn:p[2],th:p[3],en:p[4],qs:[]});}
+  else if(l[0]==="?"){const p=l.slice(1).split("|");STORIES[STORIES.length-1].qs.push({cn:p[0],th:p[1],en:p[2],a:p[3],d:p.slice(4,7)});}
+});
+let PYM=null,PYN=-1;
+function pyOf(cn){if(PYN!==WORDS.length){PYN=WORDS.length;PYM=new Map();WORDS.forEach(w=>{if(!PYM.has(w.cn))PYM.set(w.cn,w.py);});}
+  return segCn(cn,PYM).map(t=>t[1]).filter(Boolean).join(" ");}
+const sentParts=t=>t.split(/(?<=[。！？])/).map(x=>x.trim()).filter(Boolean);
+Voice.sayList=function(parts,btn,opt){
+  opt=opt||{}; this.stop(); const my=this.token; let i=0; const rate=RATES[RATE]*(opt.slow?0.7:1);
+  if(btn){btn.classList.add("playing");this.btn=btn;}
+  const fin=()=>{if(btn)btn.classList.remove("playing");if(this.btn===btn)this.btn=null;};
+  const v=this.pick();
+  const next=()=>{ if(my!==this.token||i>=parts.length){fin();return;} const t=parts[i++];
+    if(v){const u=new SpeechSynthesisUtterance(t);u.voice=v;u.lang=v.lang||"zh-CN";u.rate=rate;u.pitch=this.pitch(v);u.onend=()=>setTimeout(next,250);u.onerror=()=>fin();speechSynthesis.speak(u);}
+    else{const a=new Audio("https://dict.youdao.com/dictvoice?le=zh&audio="+encodeURIComponent(t));a.playbackRate=Math.max(.5,rate);this.audio=a;a.onended=()=>setTimeout(next,250);a.onerror=fin;a.play().catch(fin);}
+  }; setTimeout(next,60);
+};
+
 const LQ=`我每天早上七点起床，八点去学校。|ฉันตื่นนอน 7 โมงเช้าทุกวัน และไปโรงเรียน 8 โมง|I get up at seven every morning and go to school at eight.|我几点去学校？|ฉันไปโรงเรียนกี่โมง|What time do I go to school?|八点|七点|九点|六点
 今天星期三，明天星期四。|วันนี้วันพุธ พรุ่งนี้วันพฤหัสบดี|Today is Wednesday, tomorrow is Thursday.|明天星期几？|พรุ่งนี้วันอะไร|What day is tomorrow?|星期四|星期三|星期五|星期六
 我家有五口人，爸爸、妈妈、哥哥、妹妹和我。|บ้านฉันมี 5 คน พ่อ แม่ พี่ชาย น้องสาวและฉัน|There are five people in my family: dad, mom, brother, sister and me.|我家有几口人？|บ้านฉันมีกี่คน|How many people are in my family?|五口人|四口人|三口人|六口人
@@ -12798,56 +13011,72 @@ const LQ=`我每天早上七点起床，八点去学校。|ฉันตื่น
 今天是十月十三号，星期二。|วันนี้วันที่ 13 ตุลาคม วันอังคาร|Today is Tuesday, October 13th.|今天是几月几号？|วันนี้วันที่เท่าไร|What is today's date?|十月十三号|十月十二号|九月十三号|十一月三号
 我给妈妈买了一个礼物，她很高兴。|ฉันซื้อของขวัญให้แม่ แม่ดีใจมาก|I bought a gift for my mom and she was very happy.|谁很高兴？|ใครดีใจ|Who was happy?|妈妈|爸爸|朋友|老师`.split("\n").map((l,i)=>{const p=l.split("|");return {id:5000+i,pc:p[0],pth:p[1],pen:p[2],qc:p[3],qth:p[4],qen:p[5],a:p[6],d:p.slice(7,10)};});
 const sMean=x=>LANG==="th"?x.th:(x[LANG]||x.en||"");
-const hMode=()=>$("hMode").value||"m", rnd=a=>a[Math.floor(Math.random()*a.length)];
-function fillHMode(){const e=$("hMode"),v=e.value||"m";e.innerHTML="";
-  [["m",T("ฟังประโยค → เลือกความหมาย","Sentence → choose meaning")],["q",T("ฟังเรื่องสั้น → ตอบคำถาม","Listen → answer the question")],["b",T("ฟังประโยค → เติมคำที่หายไป","Sentence → missing word")]].forEach(([k,t])=>{const o=el("option",null,t);o.value=k;e.append(o);});e.value=v;}
+const hMode=()=>$("hMode").value||"s", rnd=a=>a[Math.floor(Math.random()*a.length)];
+function fillHMode(){const e=$("hMode"),v=e.value||"s";e.innerHTML="";
+  [["s",T("ฟังบทความสั้น → ตอบหลายคำถาม (สำหรับเด็ก)","Story → answer several questions (kids)")],["m",T("ฟังประโยค → เลือกความหมาย","Sentence → choose meaning")],["q",T("ฟังเรื่องสั้น → ตอบคำถาม","Listen → answer the question")],["b",T("ฟังประโยค → เติมคำที่หายไป","Sentence → missing word")]].forEach(([k,t])=>{const o=el("option",null,t);o.value=k;e.append(o);});e.value=v;}
 function hPool(){let l=natural().filter(x=>SEL.has(x.l)&&sMean(x)); if(l.length<4) l=natural().filter(x=>sMean(x)); return l;}
 const hSp=()=>H.mode==="q"?H.cur.pc:(H.cur.spk||H.cur.cn);
+const hQc=()=>H.mode==="s"?H.cur.st.qs[H.cur.qi].cn:H.cur.qc;
+function hPlay(slow){if(!H.cur)return; if(H.mode==="s") Voice.sayList(sentParts(H.cur.st.cn),$("hBig"),{slow}); else Voice.say(hSp(),$("hBig"),{slow});}
 function hStart(){Object.assign(H,{cur:null,n:0,ok:0,ng:0});hNext();}
 function hNext(){
   const m=hMode(); let s,g=0;
+  if(m==="s"){
+    if(H.cur&&H.mode==="s"&&H.cur.qi<H.cur.st.qs.length-1) H.cur={...H.cur,qi:H.cur.qi+1,first:false};
+    else{let st;do{st=rnd(STORIES);}while(H.cur&&H.cur.st===st&&++g<9);H.cur={st,qi:0,first:true};}
+    H.mode=m;H.n++;hRender();return;
+  }
   if(m==="q"){do{s=rnd(LQ);}while(H.cur&&H.mode==="q"&&s.id===H.cur.id&&++g<9);}
   else{const p=m==="m"?hPool():(()=>{const l=natural().filter(x=>SEL.has(x.l));return l.length>=3?l:natural();})();
     if(p.length<2) return; do{s=rnd(p);}while(H.cur&&s===H.cur&&++g<9);
     if(m==="b") s={...s,bi:Math.floor(Math.random()*s.tok.length)};}
   H.cur=s;H.mode=m;H.n++;hRender();
 }
+const O=(id,t)=>({id,t,py:pyOf(t)});
+function hQline(pre,cn){const q=$("hQs");q.textContent=pre;q.append(el("b",null,cn),el("div","py pyhide",pyOf(cn)));}
 function hStats(){$("hNo").textContent=H.n;$("hOK").textContent=H.ok;$("hNG").textContent=H.ng;}
 function hRender(){
   Voice.stop(); const s=H.cur,m=H.mode; if(!s) return; H.lock=false; let items;
-  $("hQa").classList.toggle("hide",m!=="q"); $("hQs").textContent="";
+  $("hQa").classList.toggle("hide",m!=="q"&&m!=="s"); $("hQs").textContent="";
   if(m==="m"){$("hCn").textContent=s.cn;$("hPy").textContent=s.py||"";H.ans=s.sid;
     items=[s,...sh(hPool().filter(x=>sMean(x)!==sMean(s))).slice(0,3)].map(x=>({id:x.sid,t:sMean(x)}));
     $("hLabel").textContent=T("ฟังประโยคแล้วเลือกความหมายที่ถูกต้อง","Listen and choose the correct meaning");}
   else if(m==="q"){$("hCn").textContent=s.pc;$("hPy").textContent="";H.ans=s.id;
-    $("hQs").textContent=T("คำถาม: ","Question: ")+(LANG==="th"?s.qth:s.qen);
-    items=[{id:s.id,t:s.a},...s.d.map((x,i)=>({id:s.id*10+i+1,t:x}))];
+    hQline(T("คำถาม: ","Question: ")+(LANG==="th"?s.qth:s.qen)+"  ｜  ",s.qc);
+    items=[O(s.id,s.a),...s.d.map((x,i)=>O(s.id*10+i+1,x))];
     $("hLabel").textContent=T("ฟังเรื่องสั้น แล้วตอบคำถามด้านล่าง (กด “ฟังคำถาม” เพื่อฟังคำถามเป็นภาษาจีน)","Listen to the passage, then answer the question below (tap “Play question” to hear it in Chinese)");}
+  else if(m==="s"){const st=s.st,q=st.qs[s.qi]; H.ans=1;
+    $("hCn").textContent=st.cn; $("hPy").textContent=pyOf(st.cn);
+    hQline(T("ข้อ ","Q")+(s.qi+1)+"/"+st.qs.length+": "+(LANG==="th"?q.th:q.en)+"  ｜  ",q.cn);
+    items=[O(1,q.a),...q.d.map((x,i)=>O(i+2,x))];
+    $("hLabel").textContent=T("เรื่อง: ","Story: ")+(LANG==="th"?st.tt:st.te)+" — "+T("ฟังทั้งเรื่องก่อน แล้วตอบคำถามทีละข้อ","listen to the whole story, then answer one by one");}
   else{const w=s.tok[s.bi][0];H.ans=1;
     $("hCn").textContent=s.tok.map((t,i)=>i===s.bi?"＿＿":t[0]).join(""); $("hPy").textContent=s.tok.map((t,i)=>i===s.bi?"＿＿":t[1]).join(" ");
-    const others=[...new Set(sh(natural().flatMap(x=>x.tok.map(t=>t[0]))).filter(t=>t!==w))].slice(0,3);
-    items=[{id:1,t:w},...others.map((t,i)=>({id:i+2,t}))];
+    const seen=new Set([w]),others=[];sh(natural().flatMap(x=>x.tok)).forEach(t=>{if(others.length<3&&!seen.has(t[0])){seen.add(t[0]);others.push(t);}});
+    items=[{id:1,t:w,py:s.tok[s.bi][1]},...others.map((t,i)=>({id:i+2,t:t[0],py:t[1]}))];
     $("hLabel").textContent=T("ฟังประโยค แล้วเลือกคำที่หายไปในช่องว่าง","Listen and choose the missing word");}
   $("hText").classList.toggle("hide",m!=="b"&&!$("hShow").checked);
-  buildOpts($("hOpts"),sh(items),(e,it)=>{e.textContent=it.t;},hAnswer);
+  buildOpts($("hOpts"),sh(items),(e,it)=>{e.textContent=it.t;if(it.py)e.append(el("small","py pyhide",it.py));},hAnswer);
   $("hNote").className="note";$("hNote").innerHTML="";$("hNext").classList.add("hide");hStats();
-  if(ACT&&vis("pHear")) setTimeout(()=>{if(H.cur===s&&!H.lock)Voice.say(hSp(),$("hBig"));},250);
+  if(ACT&&vis("pHear")&&(m!=="s"||s.first)) setTimeout(()=>{if(H.cur===s&&!H.lock)hPlay();},250);
 }
 function hAnswer(id){
   if(H.lock) return; H.lock=true; const s=H.cur,m=H.mode,ok=id===H.ans; ok?H.ok++:H.ng++;
-  markOpts($("hOpts"),H.ans,id); $("hText").classList.remove("hide");
+  markOpts($("hOpts"),H.ans,id); if(m!=="s"||s.qi===s.st.qs.length-1) $("hText").classList.remove("hide");
   if(m==="b") $("hCn").textContent=s.tok.map(t=>t[0]).join(""),$("hPy").textContent=s.tok.map(t=>t[1]).join(" ");
   const b=$("hNote"); b.className="note show "+(ok?"right":"wrong"); b.innerHTML="";
   b.append(el("h3",null,ok?T("ถูกต้อง","Correct"):T("ยังไม่ถูก","Not quite")));
-  if(m==="q") b.append(el("p",null,s.qc+" → "+s.a),el("p",null,s.pc+" — "+(LANG==="th"?s.pth:s.pen)));
+  if(m==="s"){const q=s.st.qs[s.qi];b.append(el("p",null,q.cn+" → "+q.a));
+    if(s.qi===s.st.qs.length-1) b.append(el("p",null,s.st.cn),el("p",null,LANG==="th"?s.st.th:s.st.en));}
+  else if(m==="q") b.append(el("p",null,s.qc+" → "+s.a),el("p",null,s.pc+" — "+(LANG==="th"?s.pth:s.pen)));
   else b.append(el("p",null,s.cn+"  "+(s.py||"")+" — "+sMean(s)));
   $("hNext").classList.remove("hide"); hStats();
 }
 $("hBig").innerHTML=ICON; $("hNext").onclick=hNext; $("hStartBtn").onclick=hStart; $("hMode").onchange=hStart;
 $("hShow").onchange=()=>$("hText").classList.toggle("hide",H.mode!=="b"&&!$("hShow").checked);
-$("hRe").onclick=()=>H.cur&&Voice.say(hSp(),$("hBig")); $("hBig").onclick=$("hRe").onclick;
-$("hSlow").onclick=()=>H.cur&&Voice.say(hSp(),$("hBig"),{slow:true});
-$("hQa").onclick=()=>H.cur&&Voice.say(H.cur.qc,$("hBig"));
+$("hRe").onclick=()=>hPlay(); $("hBig").onclick=$("hRe").onclick;
+$("hSlow").onclick=()=>hPlay(true);
+$("hQa").onclick=()=>H.cur&&Voice.say(hQc(),$("hBig"));
 fillHMode();
 
 hStart(); drawChips(); buildList(); qStart(); gStart(); zStart(); tUI(); buildStats(); applyUI();
