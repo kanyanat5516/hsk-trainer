@@ -429,8 +429,17 @@
           <span class="chip">ประโยคที่ <b id="zNo">1</b>/<b id="zAll">0</b></span>
           <span class="chip ok">ถูก <b id="zOK">0</b></span>
         </div>
-        <button type="button" class="btn sm" id="zStartBtn">สลับชุดใหม่</button>
+        <div class="row">
+          <span class="lbl">จำนวนข้อ</span>
+          <div class="seg" id="zCount">
+            <button type="button" data-n="25" class="on">25</button>
+            <button type="button" data-n="50">50</button>
+            <button type="button" data-n="100">100</button>
+          </div>
+          <button type="button" class="btn sm" id="zStartBtn">เริ่มชุดใหม่</button>
+        </div>
       </div>
+      <div class="progress"><span id="zBar"></span></div>
       <div class="qbox"><p id="zHint"></p></div>
       <div class="slot" id="zSlot"></div>
       <div class="pool" id="zPool"></div>
@@ -440,6 +449,7 @@
         <button type="button" class="btn ghost" id="zClear">ล้าง</button>
         <button type="button" class="btn hide" id="zNext">ประโยคถัดไป</button>
       </div>
+      <div class="note" id="zResult"></div>
     </section>
   </div>
 
@@ -1345,11 +1355,35 @@ const TPL=[
 ];
 function tplFor(ws){const out=[];ws.forEach(w=>{if(w.cn.length>6)return;TPL.forEach(f=>{const o=f(w);o.l=w.l;o.cn=o.tok.map(t=>t[0]).join("");o.py=o.tok.map(t=>t[1]).join(" ");out.push(o);});});return out;}
 /* ============ 4) เกมเรียงประโยค ============ */
-const Z={list:[],i:0,ok:0,picked:[],done:false};
+const Z={list:[],i:0,ok:0,picked:[],done:false,total:25,fin:false};
+/* ประโยคเพิ่มเติม: ตัดคำจากประโยคในเกมฟัง (LQ) ด้วยคลังศัพท์ทั้งหมด */
+const ZX={n:-1,list:[]};
+function zExtra(){
+  if(ZX.n===WORDS.length) return ZX.list;
+  ZX.n=WORDS.length; ZX.list=[];
+  const d=new Map(),lv=new Map(),seen=new Set(natural().map(x=>x.cn));
+  WORDS.forEach(w=>{if(!d.has(w.cn)){d.set(w.cn,w.py);lv.set(w.cn,w.l);}});
+  LQ.forEach(q=>{
+    const raw=q.pc; if(!raw||(raw.match(/[。？！]/g)||[]).length!==1) return;
+    const tok=segCn(raw,d); if(tok.length<3||tok.length>11) return;
+    const cn=tok.map(t=>t[0]).join(""); if(seen.has(cn)) return;
+    let l=0; tok.forEach(t=>{const v=lv.get(t[0]); if(v>l) l=v;});
+    seen.add(cn);
+    ZX.list.push({l:l||1,tok,cn,py:tok.map(t=>t[1]).join(" "),th:q.pth,en:q.pen||"",alt:[],spk:raw});
+  });
+  return ZX.list;
+}
 function zStart(){
-  const nn=sh(natural().filter(x=>SEL.has(x.l))).slice(0,60), tp=sh(tplFor(pool()));
-  Z.list=sh([...nn,...tp.slice(0,100-nn.length)]); if(!Z.list.length) Z.list=sh(SENT.slice());
-  Z.i=0; Z.ok=0; zRender();
+  const real=sh([...natural().filter(x=>SEL.has(x.l)),...zExtra().filter(x=>SEL.has(x.l))]);
+  const tmpl=sh(tplFor(pool()));
+  const want=Z.total, nReal=Math.min(real.length,Math.ceil(want*0.8));
+  let mix=[...real.slice(0,nReal),...tmpl.slice(0,want-nReal)];
+  if(mix.length<want) mix=[...mix,...real.slice(nReal,nReal+want-mix.length)];
+  if(!mix.length) mix=SENT.slice();
+  Z.list=sh(mix).slice(0,want);
+  Z.i=0; Z.ok=0; Z.fin=false; $("zResult").className="note"; $("zResult").innerHTML="";
+  $("zCheck").classList.remove("hide"); $("zClear").classList.remove("hide");
+  zRender();
 }
 function tokBtn(t){
   const b=el("button","tok"); b.type="button";
@@ -1360,6 +1394,7 @@ function zRender(){
   Voice.stop(); Z.done=false; Z.picked=[];
   const s=Z.list[Z.i];
   $("zNo").textContent=Z.i+1; $("zAll").textContent=Z.list.length; $("zOK").textContent=Z.ok;
+  $("zBar").style.width=(Z.i/Z.list.length*100)+"%";
   $("zHint").textContent=T("เรียงคำให้ได้ประโยค: ","Arrange the words to say: ")+(LANG==="th"?s.th:(s[LANG]||s.en));
   $("zNote").className="note"; $("zNote").innerHTML="";
   $("zNext").classList.add("hide"); $("zCheck").classList.remove("hide");
@@ -1399,7 +1434,7 @@ $("zCheck").onclick=()=>{
   }
   Z.done=true;
   const ans=Z.picked.map(i=>s.tok[i][0]).join("");
-  const ok=ans===s.cn||s.alt.includes(ans);
+  const ok=ans===s.cn||(s.alt||[]).includes(ans);
   if(ok) Z.ok++;
   $("zSlot").classList.add(ok?"sentOK":"sentNO");
   note.className="note show "+(ok?"right":"wrong"); note.innerHTML="";
@@ -1408,9 +1443,28 @@ $("zCheck").onclick=()=>{
     el("div","expy py pyhide",s.py),el("div","exth",LANG==="th"?s.th:s.en));
   $("zOK").textContent=Z.ok;
   $("zCheck").classList.add("hide"); $("zNext").classList.remove("hide");
+  $("zNext").textContent=Z.i>=Z.list.length-1?T("ดูผลสรุป","See results"):T("ประโยคถัดไป","Next sentence");
   if($("autoSpeak").checked) Voice.say(s.cn);
 };
-$("zNext").onclick=()=>{Z.i=(Z.i+1)%Z.list.length;zRender();};
+$("zNext").onclick=()=>{
+  if(Z.i>=Z.list.length-1){zFinish();return;}
+  Z.i++;zRender();
+};
+function zFinish(){
+  Voice.stop(); Z.fin=true; const n=Z.list.length, pct=Math.round(Z.ok/n*100);
+  $("zBar").style.width="100%";
+  ["zSlot","zPool","zNote"].forEach(id=>{$(id).innerHTML="";});
+  $("zNote").className="note"; $("zHint").textContent=T("จบชุดแล้ว","Finished");
+  $("zNext").classList.add("hide"); $("zCheck").classList.add("hide"); $("zClear").classList.add("hide");
+  const r=$("zResult"); r.className="note show "+(pct>=60?"right":"wrong"); r.innerHTML="";
+  r.append(el("h3",null,T("สรุปผล","Result")+": "+Z.ok+" / "+n+" ("+pct+"%)"),
+    el("p",null,T("ถูก ","Correct ")+Z.ok+T(" ข้อ · ผิด "," · Wrong ")+(n-Z.ok)+T(" ข้อ"," ")),
+    el("p",null,T("กด “เริ่มชุดใหม่” เพื่อเล่นอีกครั้ง","Press “New set” to play again")));
+}
+document.querySelectorAll("#zCount button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#zCount button").forEach(x=>x.classList.toggle("on",x===b));
+  Z.total=+b.dataset.n; zStart();
+});
 $("zStartBtn").onclick=zStart;
 
 /* ============ 5) หน้าคำศัพท์ ============ */
